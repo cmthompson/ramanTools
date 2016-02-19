@@ -180,18 +180,14 @@ def separateNWgeo(filename):
                 i.remove('')
                 
             energies = np.append(energies, float(i[4]))
-    plot(energies)
+    plt.plot(energies)
     ylabel('energy')
     xlabel('step')
           
     
     return 0
     
-def NWchemTDDFT(filename,energyunits = 'ev',triplets=False,lines=True,spectrum=True):
-    
-    if triplets:
-        print 'hello'
-    return 0
+def NWchemTDDFT(filename,energyunits = 'nm',lines = True, spectrum = True):
     
     fileopen = open(filename,'rb')
     f=fileopen.readlines()
@@ -209,12 +205,11 @@ def NWchemTDDFT(filename,energyunits = 'ev',triplets=False,lines=True,spectrum=T
     triplet_energies = array([])
     singlet_osc_strengths = array([])
     triplet_osc_strengths = array([])
-    print start
+    
     for index in range(start, len(f)):
-        print index
         i =f[index]
         if 'Excited state energy' in i:
-            print 'found maker', i, index
+            
             start = index
             break
         elif 'Root' in i:
@@ -223,33 +218,24 @@ def NWchemTDDFT(filename,energyunits = 'ev',triplets=False,lines=True,spectrum=T
             singlet_energies = np.append(singlet_energies, [energy])
             oscillator = float(f[f.index(i)+5].split(' ')[-1])
             singlet_osc_strengths = np.append(singlet_osc_strengths,oscillator)
-          
-    for index in range(start,len(f)):
-        if 'Davidson' in f[index]:
-            start = index
-    print 'now', start
-    if triplets:
-        for index in range(start+1, len(f)):
-            
-            i =f[index]
-            
-            if 'Excited state energy' in i:
-                print i
-                break
-            elif 'Root' in i:
-                print i
-                z = i.split(' ')
-                print z[-3]
-                energy = float(z[-3])
-                
-                triplet_energies = np.append(triplet_energies, [energy])
-                oscillator = 1
-                triplet_osc_strengths = append(triplet_osc_strengths,oscillator)
+    print 'start', start, len(f)
+#    for index in range(start+1, len(f)):
+#        
+#        i =f[index]
+#        
+#        if 'Excited state energy' in i:
+#            print i
+#            break
+#        elif 'Root' in i:
+#            z = i.split(' ')
+#            energy = float(z[-3])
+#            singlet_energies = np.append(triplet_energies, [energy])
+#            oscillator = float(f[f.index(i)+5].split(' ')[-1])
+#            triplet_osc_strengths = append(triplet_osc_strengths,oscillator)
     
 
     if True:
         gamma=0.05
-       
         freqs = singlet_energies
         amps = singlet_osc_strengths
         x = np.arange(1,5,0.001)
@@ -257,23 +243,29 @@ def NWchemTDDFT(filename,energyunits = 'ev',triplets=False,lines=True,spectrum=T
         y = np.zeros(x.shape)
         
         for i in range(amps.size):
-            print amps[i], freqs[i]
+           
             y+=    (1/pi)*amps[i]*(0.5*gamma)/((x-freqs[i])**2+(0.5*gamma)**2)
             if lines:
-                plt.vlines(freqs[i], 0, amps[i]*10,colors = 'k')
-        if triplets:
-            print 'triplet energies', triplet_energies
-            for i in range(len(triplet_energies)):plt.vlines(triplet_energies[i], 0, 1,colors = 'r')
-
-        axistoploton=plt.gca()
+                plt.vlines(1240/freqs[i], 0, amps[i]*10,colors = 'k')
+                
         if energyunits=='nm':
-            axistoploton.plot(1240/x,y)
-            return 1240/freqs
+            freqs = 1240/freqs
         elif energyunits=='ev' or  energyunits=='eV':
-            axistoploton.plot(x,y)
-            return freqs
+            pass
+        
+        if spectrum:
+            axistoploton=plt.gca()
+            if energyunits=='nm':
+                axistoploton.plot(1240/x,y)
+                
+            elif energyunits=='ev' or  energyunits=='eV':
+                axistoploton.plot(x,y)
+                
+        
+            
+        
     
-    return 0
+    return freqs
     
 def NWChemDOS(filename,axis = plt,_plot=False):
     

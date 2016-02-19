@@ -3,8 +3,12 @@
 Created on Thu Oct 16 11:37:39 2014
 
 @author: chris
+<<<<<<< HEAD
 
 Raman Tools contains classes for GUI of spectral processing
+=======
+RamanTools contains the classes and objects for GUI of data processing
+>>>>>>> newramanToolbranchFeb19
 """
 
 

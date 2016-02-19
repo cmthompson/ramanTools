@@ -6,7 +6,7 @@ Created on Wed May  6 15:50:30 2015
 """
 import pdb
 import numpy
-from numpy import array,float64, pi,exp, transpose,sign
+from numpy import *
 import scipy.optimize
 import pandas
 from ramanTools.SPETools import File
@@ -15,6 +15,7 @@ import scipy.optimize
 import matplotlib.pyplot as plt
 from collections import namedtuple
 import inspect
+
 
 
 
@@ -117,6 +118,8 @@ class RamanSpectrum(pandas.Series):
      
     def __array_finalize__(self,obj):
         if obj is None: return
+
+        
     def reverse(self):
         return RamanSpectrum(pandas.Series(self.values[::-1],self.index[::-1]))
     def addoffset(self,offset):
@@ -175,6 +178,7 @@ class RamanSpectrum(pandas.Series):
         return calc_noise(self,rnge,rnge_type = rnge_type)
         
     def calc_area(self,rnge,fill=False):
+        
         return calc_area(self,rnge,fill=fill)
     def normalize(self):
         rnge =(self.index[0], self.index[-1])
@@ -264,7 +268,7 @@ def FourierFilter(input_array,width =900,demo = False):
     
 def calc_area(spectrum,rnge,fill = False):
     
-    ### calculates the area between data and a straight line (a linear baseline)
+    """calculates the area between data and a straight line (a linear baseline)"""
     start = spectrum.nearest(rnge[0])#argmin(abs(array(spectrum.index)-rnge[0]))
     end = spectrum.nearest(rnge[1])#argmin(abs(array(spectrum.index)-rnge[1]))+1
     
@@ -522,7 +526,7 @@ def irs(orca_output_file, normalize = False,color='k',labelpeaks = True):
     
 
 def etchegoin_analysis(folder):
-    from RamanTools3 import RamanSpectrum
+    
     os.chdir(folder)
     data = zeros((0,1024))
     frequency = zeros(data.shape)
@@ -699,6 +703,17 @@ def SPIDcorrect785(spectrum):
     
     return c    
 
+def SPIDcorrect473(spectrum):
+    
+    c = spectrum.copy()
+ 
+    for i in range(len(c)):
+        
+        s = numpy.argmin(abs(c.index[i]-array(Table_SPIDcorrect473.index)))
+        c.iloc[i]/=Table_SPIDcorrect473.values[s]
+    
+    return c   
+
     
 #FTPRef =  RamanSpectrum('/home/chris/Documents/DataWeiss_Backup/150430/150430_08.txt')
 #BrTPRef = RamanSpectrum('/home/chris/Documents/DataWeiss_Backup/150430/150430_14.txt')
@@ -720,26 +735,7 @@ def SPIDcorrect785(spectrum):
 #ODPARef =  RamanSpectrum('/home/chris/Documents/DataWeiss_Backup/140908/OPDA 100s collection time on glass_bendregion_50xObj.spe')
 #CdOPARef = RamanSpectrum('/home/chris/Documents/DataWeiss_Backup/150612/150612_04.txt')
 #OPARef = RamanSpectrum('/home/chris/Documents/DataWeiss_Backup/150601/octylphosphonic acid.txt')
-try:
-    FTPRef =  RamanSpectrum('/home/chris/Documents/DataWeiss/Utilities/150430_08.txt')
-    BrTPRef = RamanSpectrum('/home/chris/Documents/DataWeiss/Utilities/150430_14.txt')
-    ClTPRef = RamanSpectrum('/home/chris/Documents/DataWeiss/Utilities/150424_06.txt')
-    MeOTPRef = RamanSpectrum('/home/chris/Documents/DataWeiss/Utilities/4_methoxythiophenol.spe')
-    MethylTPRef = RamanSpectrum('/home/chris/Documents/DataWeiss/Utilities/1_methylbenzenethiol.spe')
-    CdMethylTPRef = RamanSpectrum('/home/chris/Documents/DataWeiss/Utilities/150707_02.txt')
-    CdMeOTPRef = RamanSpectrum('/home/chris/Documents/DataWeiss/Utilities/150707_03.txt')
-    CdODPARef =  RamanSpectrum('/home/chris/Documents/DataWeiss/Utilities/1_reference CdODPA.spe') 
-    tolueneRef =  RamanSpectrum('/home/chris/Documents/DataWeiss_Backup/141007/Liquid sample corrected-spectrum of toluene.txt') 
-    ODPARef =  RamanSpectrum('/home/chris/Documents/DataWeiss_Backup/140908/OPDA 100s collection time on glass_bendregion_50xObj.spe')
-    CdOPARef = RamanSpectrum('/home/chris/Documents/DataWeiss_Backup/150612/150612_04.txt')
-    OPARef = RamanSpectrum('/home/chris/Documents/DataWeiss_Backup/150601/octylphosphonic acid.txt')
-    #
-    Table_SPIDcorrect785 = RamanSpectrum(pandas.Series.from_csv('/home/chris/Documents/DataWeiss/Utilities/Table_SPIDcorrect785.csv'))
-    Table_SPIDcorrect633 = RamanSpectrum(pandas.Series.from_csv('/home/chris/Documents/DataWeiss/Utilities/Table_SPIDcorrect633.csv'))
-except:
-    print ('failed to load reference spectra')
- 
-    
+
 
 
 ###################
@@ -768,6 +764,22 @@ def createSPIDcorrect785():
     b= (a.values/b)
     Table_SPIDcorrect785 = pandas.Series(b[0:2960],array(a.index)[0:2960])
     Table_SPIDcorrect785.to_csv('/home/chris/Documents/DataWeiss/Utilities/Table_SPIDcorrect785.csv')
+    return 0
+
+def createSPIDcorrect473():
+    a = RamanSpectrum('160208/160208_20_473correct.txt')
+    a=RamanSpectrum(a.truncate(after=1000))
+    a.index = 10**7/473-10**7/array(a.index)
+    a = removespikes(a)
+    
+    a.smooth(window_len = 33,window ='flat')
+    a.plot()
+    r = numpy.polyfit(array(a.index)[0:500], a.values[0:500],3)
+    b = polyeval(r,array(a.index)[0:500])
+    plt.plot(array(a.index[0:500]),b)
+    b= (a.values[0:500]/b)
+    Table_SPIDcorrect473= pandas.Series(b,array(a.index)[0:500])
+    Table_SPIDcorrect785.to_csv('Utilities/Table_SPIDcorrect473.csv')
     return 0
     
 def quickoffset(ax,rnge=None,offset = None,autolim=True):
