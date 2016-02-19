@@ -3,6 +3,8 @@
 Created on Thu Oct 16 11:37:39 2014
 
 @author: chris
+
+Raman Tools contains classes for GUI of spectral processing
 """
 
 
@@ -44,7 +46,7 @@ class DisplayWindow(object):
         current_checker = None
         
 
-        def __init__(self, master):
+        def __init__(self, master,ax = None):
                 
                 self.rootref = master
                 self.master = Toplevel()
@@ -56,7 +58,10 @@ class DisplayWindow(object):
                 self.Plot = Figure(figsize=(6,3))               
                 self.channel_list = []
                 self.array_list = []
-                self.Plot.a  = self.Plot.add_subplot(111)
+                if axis is not None:
+                    self.Plot.a  = self.Plot.add_subplot(axes=ax)
+                else:
+                    self.Plot.a  = self.Plot.add_subplot(111)
                 self.Plot.a.set_xlabel('Raman Shift (cm$^{-1}$)')
                 self.Plot.a.set_ylabel('Intensity (a.u.)')
                 self.Plot.a.legend([])
@@ -66,7 +71,9 @@ class DisplayWindow(object):
                 self.legend_var.set(1)
                 self.legendbox = Checkbutton(self.frame,
                                        variable=self.legend_var,
-                                       command=self.update_legend)
+                                       command=self.update_legend,text='Legend')
+#                self.legend_label=Label(self.master, bd=1, anchor=W)
+#                self.legend_label.config(text = "Legend")
                 
                 
                 
@@ -149,11 +156,22 @@ class DisplayWindow(object):
                 
                 self.master.config(menu= self.menubar)
                 
-                #self.masterframe.add(self.frame)
+                
+                
+                
+                self.left_click_menu = Menu(self.frame, tearoff=0)
+                self.left_click_menu.add_command(label="open", command = self.DisplaySpectrum)
+#                self.left_click_menu.add_command(label="blue", command=lambda:self.change_color('b'))
+#                self.left_click_menu.add_command(label="black", command=lambda:self.change_color('k'))
+#                self.left_click_menu.add_command(label="yellow", command=lambda:self.change_color('y'))
+                
+                
+                self.canvas._tkcanvas.bind("<Button-3>", self.popup)
+
+
                 self.frame.pack(side = TOP, expand=1, fill=BOTH)#(row = 0, column = 0, padx = 25, pady = 25)
                 self.legendbox.pack(side=BOTTOM)
                 self.statusbar.pack(side = BOTTOM,expand=1,fill=X)
-                #self.masterframe.add(self.checker_frame)
                 self.checker_frame.pack(side=BOTTOM,expand = 1,fill=X)#(row=1,column=0)
                 self.canvas._tkcanvas.pack( expand = 1, fill = BOTH)
                 self.toolbar = NavigationToolbar2TkAgg(self.canvas, self.frame)
@@ -164,7 +182,10 @@ class DisplayWindow(object):
                 list_of_display_windows.append(self)
                               
                 return None
-        
+        def popup(self,event):
+            print self
+            print 'something'
+            self.left_click_menu.post(event.x_root, event.y_root)
         def update_legend(self):
             
             if self.legend_var.get() == 0:
@@ -375,7 +396,7 @@ class DisplayWindow(object):
                 
                 return 0
         def start_autobaseline(self):
-                
+               # self.toolbar.release(None)
                 self.span = SpanSelector(self.Plot.a, self.autobaseline, 'horizontal')
                 self.span.connect_event('pick_event',self.autobaseline)
                 gcf().canvas.mpl_connect('button_press_event',self.disconnect)
@@ -388,7 +409,7 @@ class DisplayWindow(object):
                 if self.current_checker == None:
                     return 0
                 newspectrum = autobaseline(self.current_checker.spectrum,(start,end),order = order)
-                                                        
+                                                      
                 self.Plot.a.add_line(checker(self,newspectrum,color = self.getcolor(),operations = 'sp = autobaseline(sp), ('+str(start)+','+str(end)+'), order ='+str(order)+')\n'))
                 self.Plot.a.relim()
                 self.Plot.a.autoscale_view(tight = False)
@@ -509,17 +530,33 @@ class checker(matplotlib.lines.Line2D):
                 self.operations = str('sp = RamanSpectrum('+self.name+')\n'
                                 +operations)
               
-                w = Canvas(master = self.frame,width = 20,height=20)
-                w.pack(side = LEFT,padx=10)
+                self.w = Canvas(master = self.frame,width = 20,height=20)
+                self.w.pack(side = LEFT,padx=10)
                
                 fillcolor = RGBtohex(colordict.colors[self.get_color()])
                 
-                w.create_rectangle(0,0,100,100,  fill=fillcolor)
+                self.w.create_rectangle(0,0,100,100,  fill=fillcolor)
+                self.w.bind("<Button-3>", self.popup)
+
+                #w.bind("<Button-1>",self.set_current)
+                self.left_click_menu = Menu(self.frame, tearoff=0)
+                self.left_click_menu.add_command(label="red", command=lambda:self.change_color('r'))
+                self.left_click_menu.add_command(label="blue", command=lambda:self.change_color('b'))
+                self.left_click_menu.add_command(label="black", command=lambda:self.change_color('k'))
+                self.left_click_menu.add_command(label="yellow", command=lambda:self.change_color('y'))
                 
+                # create a canvas
+              
+                
+                
+                
+                # attach popup to canvas
                
-                
+
                 return None
-        
+        def popup(self,event):
+            
+            self.left_click_menu.post(event.x_root, event.y_root)
                  
         def set_current(self,event):
                 self.master.current_checker = self
@@ -531,23 +568,33 @@ class checker(matplotlib.lines.Line2D):
                 self.master.statusbar.config(text = self.name)
                 
                 
-                return 0 
                 
-                
+   
         def change_visible(self):
                 
                 if self.visible_var.get() == 0:
-                        self.set_visible(False)
+                        self.master.Plot.a.lines.remove(self)#(set_visible(False)
                 else:
-                        self.set_visible(True)
+                        self.master.Plot.a.add_line(self)#self.set_visible(True)
                 self.master.Plot.a.relim()
                 self.master.Plot.a.autoscale_view(tight = False)
                 self.master.Plot.canvas.draw()
                 
-                return 0
+               
+        def change_color(self,color):
+                self.set_color(color)
+                fillcolor = RGBtohex(colordict.colors[color])
+                self.w.create_rectangle(0,0,100,100,  fill=fillcolor)
+                self.master.Plot.canvas.draw()
+                
+                
 ##############################################################  ############################################################## ############################################################## ############################################################## ############################################################## 
                 ############################################################## ############################################################## ############################################################## ############################################################## 
                 ############################################################## ############################################################## ############################################################## ############################################################## ############################################################## 
+
+
+
+
        
 class FittingWindow:
     
@@ -681,7 +728,7 @@ class FittingWindow:
         self.endfreq_text.bind("<Return>", self.update_limits)
         self.endfreq_text.grid(row = 1 , column =1,sticky = W)
         
-        if self.init_function(0) == -1:
+        if self.init_function('OneLorentzian') == -1:
             self.t.insert(END, 'error initializing fit function')
         
         self.ax1.cla()
@@ -807,7 +854,7 @@ class FittingWindow:
     def smoothdata(self):
         self.a.smoooth()
         self.guessdraw(0)
-        return 0
+        
         
         
     def update_limits(self,extra):
@@ -935,6 +982,7 @@ class FittingWindow:
             self.ax1.draw_artist(l)
            
         self.canvas.blit(self.ax1.bbox)
+        
         
             
         
