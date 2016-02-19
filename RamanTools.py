@@ -15,7 +15,7 @@ import Tkinter
 import tkFileDialog, tkSimpleDialog, tkMessageBox
 from matplotlib.pyplot import *
 from matplotlib.axes import *
-from SFGMeFiles import SFG_Notebook
+from SFGMe import SFG_Notebook
 import matplotlib.figure 
 from matplotlib.figure import Figure 
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg,NavigationToolbar2TkAgg

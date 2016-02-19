@@ -97,6 +97,8 @@ def separateNWgeo(filename):
     namefile = 0
     indexlist = []
     
+    
+    
     for l in range(len(f)):
         if 'Geometry "geometry" -> "geometry"' in f[l]:
             indexlist.append(l)
@@ -116,12 +118,23 @@ def separateNWgeo(filename):
                     lengthoflist = i[0]
                     table+=(str(i[1])+ ' ' + str(i[3]) + ' ' + str(i[4])+' '+ str(i[5]))
                 elif not i[0][0].isdigit():
-                    table = str(lengthoflist)+'\nnocomment\n'+table
+                    xyzfiletext = str(lengthoflist)+'\nnocomment\n'+table
                     with open('/home/chris/Desktop/geos/xyzfile'+str(namefile)+'.xyz', 'wb') as writefile:
-                        writefile.write(table)
+                        writefile.write(xyzfiletext)
                         writefile.close()
                         namefile+=1
+                    with open('/home/chris/Desktop/geos/animation.v000.xyz','ab') as animfile:
+                        animfile.write(str(lengthoflist)+'\n')
+                        
+                        if namefile==0:
+                            animfile.write('* (null), Energy   -1000.0000000\n')
+                        else:
+                            animfile.write('* Frequency(0)    0.0000\n')
+                        animfile.write(table)
+                        animfile.close()
+                            
                     break
+ 
                 
     indexlist = []            
     for l in range(len(f)):
