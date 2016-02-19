@@ -3,6 +3,7 @@
 Created on Thu Oct 16 11:37:39 2014
 
 @author: chris
+RamanTools contains the classes and objects for GUI of data processing
 """
 
 
