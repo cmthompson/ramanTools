@@ -637,6 +637,10 @@ def fitspectrum(spectrum, rnge, functiontype, guess, function=None):
     if functiontype == "Custom":
         listofvariables = strnum(inspect.getargspec(function)[0][1:])
     elif 'Gaussian' in functiontype:
+        order = numpy.argsort(result[0][numpeaks:2*numpeaks])
+        result[0][:numpeaks] = result[0][order] 
+        result[0][numpeaks:2*numpeaks] = result[0][numpeaks+order] 
+        result[0][2*numpeaks:3*numpeaks] = result[0][2*numpeaks+order] 
         for i in range(numpeaks):
             A = result[0][i]
             x0 = result[0][i+numpeaks]

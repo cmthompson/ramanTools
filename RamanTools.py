@@ -42,8 +42,12 @@ list_of_display_windows = []
 
 def RGBtohex(rgbtuple): return '#%02x%02x%02x'%  (rgbtuple[0]*255,rgbtuple[1]*255,rgbtuple[2]*255)
 
-
-
+def modify_plot(ax):
+    root = Tk()
+    root.withdraw()
+    DisplayWindow(root,ax=ax)
+    root.mainloop()
+    
 class DisplayWindow(object):
         global CdMeOTPRef, MeOTPRef
         color_list = deque(['b','g','r','c','m','y','k'])
@@ -54,18 +58,19 @@ class DisplayWindow(object):
                 
                 self.rootref = master
                 self.master = Toplevel()
-                #self.masterframe= PanedWindow(master = self.master,showhandle=True)
-               # self.masterframe.pack()
+                self.checker_frame=Tkinter.Frame(master = self.master)#,yscrollcommand=self.scroll.set)
+                #self.scroll.config(command=self.checker_frame.yview) 
+
                         
                         
                 self.frame = Frame(master = self.master)
                 self.Plot = Figure(figsize=(6,3))               
                 self.channel_list = []
                 self.array_list = []
-                if axis is not None:
-                    self.Plot.a  = self.Plot.add_subplot(axes=ax)
-                else:
-                    self.Plot.a  = self.Plot.add_subplot(111)
+                self.Plot.a  = self.Plot.add_subplot(111)
+
+                    
+                    
                 self.Plot.a.set_xlabel('Raman Shift (cm$^{-1}$)')
                 self.Plot.a.set_ylabel('Intensity (a.u.)')
                 self.Plot.a.legend([])
@@ -170,7 +175,7 @@ class DisplayWindow(object):
 #                self.left_click_menu.add_command(label="yellow", command=lambda:self.change_color('y'))
                 
                 
-                self.canvas._tkcanvas.bind("<Button-3>", self.popup)
+               # self.canvas._tkcanvas.bind("<Button-3>", self.popup)
 
 
                 self.frame.pack(side = TOP, expand=1, fill=BOTH)#(row = 0, column = 0, padx = 25, pady = 25)
@@ -184,11 +189,20 @@ class DisplayWindow(object):
                 self.canvas.draw()
                 
                 list_of_display_windows.append(self)
-                              
+                
+                if ax is not None:
+                    
+                    for line in ax.lines:
+                        
+                        self.Plot.a.add_line(checker(self,line,color = line.get_color()))
+                    self.Plot.a.relim()
+                    self.Plot.a.autoscale_view(tight = False)
+                    self.Plot.canvas.draw()
+                    self.current_checker = self.Plot.a.lines[-1]
+                    plt.close(ax.get_figure())
                 return None
         def popup(self,event):
-            print self
-            print 'something'
+            print event.x_root, event.y_root
             self.left_click_menu.post(event.x_root, event.y_root)
         def update_legend(self):
             
@@ -500,11 +514,20 @@ class checker(matplotlib.lines.Line2D):
         
         def __init__(self,master,ramanspectrum,operations = '',*args,**kwargs):
                 self.master = master
-                self.spectrum = ramanspectrum  
-                self.name = ramanspectrum.name
                 self.frame = Frame(master = self.master.checker_frame)
                 self.frame.pack(side=BOTTOM,expand=1, fill=X)
-                matplotlib.lines.Line2D.__init__(self,ramanspectrum.index,ramanspectrum.values,*args,**kwargs)
+                if type(ramanspectrum) == matplotlib.lines.Line2D:
+                    try:
+                        self.spectrum = RamanSpectrum(pandas.Series(ramanspectrum.get_ydata(),ramanspectrum.get_xdata()))
+                        self.name=''
+                        
+                    except:
+                        'error with importing the line'
+                else:    
+                    self.spectrum = ramanspectrum  
+                    self.name = ramanspectrum.name
+                
+                matplotlib.lines.Line2D.__init__(self,self.spectrum.index,self.spectrum.values,*args,**kwargs)
                                  
                                             
                 self.visible_var = IntVar()
@@ -521,7 +544,7 @@ class checker(matplotlib.lines.Line2D):
                                         width=5,
                                         height=1)
                 
-                self.NameLabel =  Label(self.frame, height = 1, width=20,text = ramanspectrum.name[-30:])
+                self.NameLabel =  Label(self.frame, height = 1, width=20,text = self.name)
                 self.NameLabel.bind("<Button-1>",self.set_current)
                 
                 self.commentbox = Entry(master = self.frame, width = 20)
@@ -563,13 +586,20 @@ class checker(matplotlib.lines.Line2D):
             self.left_click_menu.post(event.x_root, event.y_root)
                  
         def set_current(self,event):
-                self.master.current_checker = self
-                for c in self.master.checker_list:
-                    if c == self.master.current_checker:
-                        c.NameLabel.config(relief = SUNKEN)
-                    else:
-                        c.NameLabel.config(relief = FLAT)
-                self.master.statusbar.config(text = self.name)
+            if self.master.current_checker == self:
+                return None
+            self.master.current_checker = self 
+            for c in self.master.checker_list:
+                
+                if c == self.master.current_checker:
+                    c.NameLabel.config(relief = SUNKEN)
+    
+                else:
+                    c.NameLabel.config(relief = FLAT)
+           
+                    
+            self.master.statusbar.config(text = self.name)
+            return None
                 
                 
                 
